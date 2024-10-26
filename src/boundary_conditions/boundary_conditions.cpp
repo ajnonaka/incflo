@@ -34,13 +34,18 @@ void incflo::init_bcs ()
             m_bc_type[ori] = BC::pressure_inflow;
 
             pp.get("pressure", m_bc_pressure[ori]);
-
+            pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
             // Set mathematical BCs here also
             AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::foextrap);,
                          m_bcrec_velocity[1].set(ori, BCType::foextrap);,
                          m_bcrec_velocity[2].set(ori, BCType::foextrap););
             m_bcrec_density[0].set(ori, BCType::foextrap);
-            for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
+
+            if ( pp.contains("tracer") ) {
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
+            } else {
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
+            }
         }
         else if (bc_type == "pressure_outflow" || bc_type == "po")
         {
@@ -49,13 +54,20 @@ void incflo::init_bcs ()
             m_bc_type[ori] = BC::pressure_outflow;
 
             pp.get("pressure", m_bc_pressure[ori]);
-
+            pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
             // Set mathematical BCs here also
             AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::foextrap);,
                          m_bcrec_velocity[1].set(ori, BCType::foextrap);,
                          m_bcrec_velocity[2].set(ori, BCType::foextrap););
             m_bcrec_density[0].set(ori, BCType::foextrap);
-            for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
+
+            if ( pp.contains("tracer") ) {
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
+            } else {
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
+            }
+
+
         }
         else if (bc_type == "mass_inflow" || bc_type == "mi")
         {

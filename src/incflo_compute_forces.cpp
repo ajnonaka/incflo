@@ -159,7 +159,7 @@ void incflo::compute_vel_forces_on_level (int lev,
     // rho:   density
 
     //fixme: we just consider the surface tension for first tracer
-    if (m_vof_advect_tracer && m_sigma[0]!=0.&&!m_use_cc_proj&&include_SF){
+    if (m_vof_advect_tracer && m_sigma[0]!=0./*&&!m_use_cc_proj*/&&include_SF){
 
       VolumeOfFluid*  vof_p = get_volume_of_fluid ();
 
@@ -172,7 +172,7 @@ void incflo::compute_vel_forces_on_level (int lev,
       // finally, SF is calculated using original cell-centered kappa, averaged rho, and averaged grad(VOF).
       //Choice 4: SF is calculated using original cell-centered kappa, rho and center-difference for grad(VOF).
 
-      int choice = 3;
+      int choice = 4;
 
 
       const auto& ba = density.boxArray();

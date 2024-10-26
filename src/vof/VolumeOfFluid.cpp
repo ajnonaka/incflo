@@ -2559,7 +2559,7 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
 
 }
 
-void VolumeOfFluid:: variable_filtered(MultiFab & variable)
+void VolumeOfFluid:: variable_filtered (MultiFab & variable)
 {
     const auto& ba = variable.boxArray();
     const auto& dm = variable.DistributionMap();
@@ -2605,7 +2605,7 @@ void VolumeOfFluid:: variable_filtered(MultiFab & variable)
 /////////////////////////////////////////////////////////////////////////////////
 Real myFunction(AMREX_D_DECL(Real x, Real y, Real z))
 {
-    return y - 0.01*cos (2.*3.14159265357*x);
+    return y - 0.0025*cos (2.*3.14159265357*x);
 }
 
 void
@@ -2627,13 +2627,13 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
            /* Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL((problo[0]+.45),
                                                            (problo[1]+.1),
                                                            (problo[2]+.45))};*/
-            Array<Real,AMREX_SPACEDIM> center1{AMREX_D_DECL((problo[0]+.5),
-                                                           (problo[1]+.75),
-                                                           (problo[2]+.35))};
+            Array<Real,AMREX_SPACEDIM> center1{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
+                                                           (problo[1]+30.e-4),
+                                                           0.5*(problo[2]+probhi[2]))};
             Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
                                                            0.5*(problo[1]+probhi[1]),
                                                            0.5*(problo[2]+probhi[2]))};
-            Real radius = .2; //5.0*dx[0];
+            Real radius = 20e-4; //5.0*dx[0];
             bool fluid_is_inside = true;
 
             EB2::SphereIF my_sphere(radius, center, fluid_is_inside);
@@ -2679,7 +2679,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     // Generate GeometryShop
     //auto gshop = EB2::makeShop(two);
     //auto gshop = EB2::makeShop(my_box);
-    auto gshop = EB2::makeShop(my_sin);
+    auto gshop = EB2::makeShop(my_sphere1);
    //auto gshop = EB2::makeShop(my_cyl);
             int max_level = v_incflo->maxLevel();
             EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
@@ -2688,7 +2688,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
         auto fact = amrex::makeEBFabFactory(geom, a_tracer.boxArray(), a_tracer.DistributionMap(),
                                             {1,1,0}, EBSupport::volume);
         auto const& volfrac = fact->getVolFrac();
-        MultiFab::Copy(a_tracer, volfrac, 0, 0, 1, 1);
+        MultiFab::Copy(a_tracer, volfrac, 0, 0, 1, 0);
 
         if (lev == v_incflo->finestLevel()) {
             EB2::IndexSpace::pop();
@@ -2793,6 +2793,8 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
         }
 
     }
+    a_tracer.FillBoundary(geom.periodicity());
+
 
     // Once vof tracer is initialized, we calculate the normal direction and alpha of the plane segment
     // intersecting each interface cell.
@@ -2800,7 +2802,19 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     curvature_calculation(lev, a_tracer, height[lev], kappa[lev]);
     int n_tag=domain_tag_droplets (finest_level, v_incflo->grids,v_incflo->geom,
                                   v_incflo->get_tracer_new (),GetVecOfPtrs(tag));
-
+        //for (MFIter mfi(a_tracer); mfi.isValid(); ++mfi)
+        //{
+        //   Box const& bx = mfi.validbox();
+        //   Box const& bxg = amrex::grow(bx,a_tracer.nGrow());
+        //   Array4<Real> const& vof = a_tracer.array(mfi);
+        //   ParallelFor(bxg, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        //   {
+        //      Real ff=vof(i,j,k);
+        //
+        //      if (i==6&&j==-1&&k==5)
+        //      Print() <<"("<<i<<","<<j<<","<<k<<")"<<"init_fraction"<<"  "<<ff<< "\n";
+        //   }); //  end ParallelFor
+        //}// end MFIter
 }
 
 
@@ -2899,7 +2913,8 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
                    TecplotFile <<(std::string("ZONE T=")+zonetitle);
                    TecplotFile <<", DATAPACKING=POINT"<<", NODES="<<totalnodes<<", ELEMENTS="<<segments.size()
                                << (AMREX_SPACEDIM== 2 ? ", ZONETYPE=FELINESEG":", ZONETYPE=FEQUADRILATERAL")
-                               <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
+                               << std::scientific << std::setprecision(6)
+                               <<", SOLUTIONTIME="<<time<<"\n";
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
                    int nn=0;
@@ -3009,7 +3024,8 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                   TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
                 TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(m_use_cc_proj?AMREX_SPACEDIM+1:AMREX_SPACEDIM+2)<<"-"
                             <<(AMREX_SPACEDIM==3?24:19)<<"]=CELLCENTERED)"
-                            <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
+                            << std::scientific << std::setprecision(6)
+                            <<", SOLUTIONTIME="<<time<<"\n";
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
 
@@ -3572,7 +3588,7 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
          for(int d = 0; d < AMREX_SPACEDIM; d++)
           mcent[d][itag - 1] += (&center.x)[d] * dV;
 
-         if (interface_cell (i,j,k, fv, fv(i,j,k))){
+         if (!CELL_IS_FULL(fv(i,j,k))/*interface_cell (i,j,k, fv, fv(i,j,k))*/){
            Real   alpha;
            XDim3  m, p;
            for (int d = 0; d < AMREX_SPACEDIM; d++)
@@ -3585,8 +3601,8 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
            for (int d = 0; d < AMREX_SPACEDIM; d++)
               (&p.x)[d] = problo[d] + dx[d]*((d<1?i:d<2?j:k)+(&p.x)[d]);
            for(int d = 0; d < AMREX_SPACEDIM; d++){
-               //fixme: just for testing
-               if (fabs(p.x)<dx[0])
+               //fixme: just for testing of the capillary wave example
+               //if (fabs(p.x)<dx[0])
               range_add_value (s[d][itag-1], (&p.x)[d]);
            }
            // do statistics of the curvature data
@@ -3831,17 +3847,17 @@ if (0){
      }
 
 // Write data to file
-     outputFile << std::fixed << std::setprecision(8) << time << ",   "<<ndrops<<",  "
-                <<std::setprecision(8) << sumtotal<<",  "<<error;
+     outputFile << std::scientific << std::setprecision(8) << time << ", "<<ndrops<<",  "
+                <<std::setprecision(8) << sumtotal<<", "<<error;
      for (int n = 0; n < n_tag && n < 7; n++){
-       outputFile <<", #"<<n+1<<",  "<<vols[n]<<",  "<<vels[n]<<",  "<<"L,  "
-                  AMREX_D_TERM(<<mcent[0][n]<<",  ", <<mcent[1][n]<<",  ", <<mcent[2][n]<<",  ")
-                  <<"R ";
+       outputFile <<", #"<<n+1<<",  "<<vols[n]<<", "<<vels[n]<<", "<<"L,  "
+                  AMREX_D_TERM(<<mcent[0][n]<<", ", <<mcent[1][n]<<", ", <<mcent[2][n]<<",  ")
+                  <<"R";
        for(int d = 0; d < AMREX_SPACEDIM; d++)
          outputFile <<",  "<<range[d][0][n]<<",  "<<range[d][1][n];
-       /*outputFile <<"s  "<<surfA[n]<<"  "
-                  <<"k: "<<kappa_range[n].mean<<" "<<kappa_range[n].min<<" "<<kappa_range[n].max
-                  <<" "<<kappa_range[n].stddev;    */
+       outputFile <<", "<<"s, "<<surfA[n]<<", "
+                  <<"k,"<<kappa_range[n].mean<<","<<kappa_range[n].min<<","<<kappa_range[n].max
+                  <<","<<kappa_range[n].stddev;
      }
      outputFile <<"\n";
      outputFile.close();
@@ -3866,19 +3882,22 @@ void VolumeOfFluid::apply_velocity_field (Real time, int nstep)
       {
         Box const& bx = mfi.tilebox();
         Array4<Real > const& vel = ld.velocity.array(mfi);
+        Array4<Real > const& tracer = ld.tracer.array(mfi);
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
           Real x = Real(i+0.5)*dx[0];
           Real y = Real(j+0.5)*dx[1];
           Real z = Real(k+0.5)*dx[2];
           Real pi = 3.14159265357;
+          if (tracer(i,j,k)>1e-4) {
 //          vel(i,j,k,0) = 2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*time/3.);
 //          vel(i,j,k,1) = -sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*time/3.);
-          vel(i,j,k,0) = sin(pi*x)*sin(pi*x)*sin(2*pi*y)*cos(pi*time/8.);
-          vel(i,j,k,1) =-sin(pi*y)*sin(pi*y)*sin(2*pi*x)*cos(pi*time/8.);
+          vel(i,j,k,0) = 0.;//sin(pi*x)*sin(pi*x)*sin(2*pi*y)*cos(pi*time/8.);
+          vel(i,j,k,1) =100.; //-sin(pi*y)*sin(pi*y)*sin(2*pi*x)*cos(pi*time/8.);
 #if (AMREX_SPACEDIM == 3)
-          vel(i,j,k,2) = -sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*time/3.);
+          vel(i,j,k,2) = 0.;//-sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*time/3.);
 #endif
+          }
         });
      }//end MFIter
     } //end lev

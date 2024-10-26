@@ -26,6 +26,20 @@ void incflo::prob_init_fluid (int lev)
         ld.tracer.setVal(m_ic_t[comp], comp, 1);
     }
 
+    if (1109 == m_probtype) {
+        get_volume_of_fluid ()->tracer_vof_init_fraction(lev, ld.tracer);
+        MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
+        ld.tracer_o.FillBoundary(geom[lev].periodicity());
+        if (m_vof_advect_tracer){
+          update_vof_density (lev, ld.density,ld.tracer);
+          MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
+          fillpatch_density(lev, m_t_new[lev], ld.density_o, 3);
+          MultiFab::Copy(ld.density_nph, ld.density, 0, 0, 1, ld.density.nGrow());
+          fillpatch_density(lev, m_t_new[lev], ld.density_nph, 3);
+        }
+
+    }
+
     for (MFIter mfi(ld.density); mfi.isValid(); ++mfi)
     {
         const Box& vbx = mfi.validbox();
@@ -191,11 +205,11 @@ void incflo::prob_init_fluid (int lev)
         }
         else if (1109 == m_probtype)
         {
-            /*init_droplet(vbx, gbx,
+            init_droplet(vbx, gbx,
                                ld.velocity.array(mfi),
                                ld.density.array(mfi),
                                ld.tracer.array(mfi),
-                               domain, dx, problo, probhi);*/
+                               domain, dx, problo, probhi);
 
         }
         else
@@ -204,19 +218,7 @@ void incflo::prob_init_fluid (int lev)
         };
     }
 
-    if (1109 == m_probtype) {
-        get_volume_of_fluid ()->tracer_vof_init_fraction(lev, ld.tracer);
-        MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
-        ld.tracer_o.FillBoundary(geom[lev].periodicity());
-        if (m_vof_advect_tracer){
-          update_vof_density (lev, ld.density,ld.tracer);
-          MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
-          fillpatch_density(lev, m_t_new[lev], ld.density_o, 3);
-          MultiFab::Copy(ld.density_nph, ld.density, 0, 0, 1, ld.density.nGrow());
-          fillpatch_density(lev, m_t_new[lev], ld.density_nph, 3);
-        }
 
-    }
 }
 
 void incflo::init_rotating_flow (Box const& vbx, Box const& /*gbx*/,
@@ -1162,7 +1164,7 @@ void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
 void incflo::init_droplet (Box const& vbx, Box const& /*gbx*/,
                             Array4<Real> const& vel,
                             Array4<Real> const& /*density*/,
-                            Array4<Real> const& /*tracer*/,
+                            Array4<Real> const& tracer,
                             Box const& /*domain*/,
                             GpuArray<Real, AMREX_SPACEDIM> const& dx,
                             GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
@@ -1174,10 +1176,12 @@ void incflo::init_droplet (Box const& vbx, Box const& /*gbx*/,
         Real y = Real(j+0.5)*dx[1];
         Real z = Real(k+0.5)*dx[2];
         Real pi = 3.14159265357;
-        vel(i,j,k,0) = 1.;//2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*0./3.);
-        vel(i,j,k,1) = 0.;//-sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*0./3.);
+        if (tracer(i,j,k)>1e-4) {
+        vel(i,j,k,0) = 0.;//2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*0./3.);
+        vel(i,j,k,1) = -200.;//-sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*0./3.);
 #if (AMREX_SPACEDIM == 3)
         vel(i,j,k,2) = 0.;//-sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*0./3.);
 #endif
+    }
     });
 }

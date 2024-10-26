@@ -48,8 +48,11 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
        // Make a temporary here to hold vel_forces
        MultiFab vel_forces(grids[lev], dmap[lev], AMREX_SPACEDIM, 0);
-
-       compute_vel_forces_on_level (lev, vel_forces, vel, rho, tra_o, tra);
+       if(m_vof_advect_tracer)
+         //to include the capillary stability requirement, the last flag is TRUE
+         compute_vel_forces_on_level (lev, vel_forces, vel, rho, tra_o, tra,true,true);
+       else
+         compute_vel_forces_on_level (lev, vel_forces, vel, rho, tra_o, tra);
 
 #ifdef AMREX_USE_EB
         if (!vel.isAllRegular()) {
