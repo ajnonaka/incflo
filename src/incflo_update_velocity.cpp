@@ -18,7 +18,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
         //    and using the half-time density
         // *************************************************************************************
         compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
-                           get_density_nph_const(), get_tracer_old_const(), get_tracer_new_const());
+                           get_density_nph_const(), get_tracer_old_const(), get_tracer_new_const(),true, m_use_cc_proj?false:true);
 
         // *************************************************************************************
         // Update the velocity

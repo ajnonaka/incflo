@@ -4,7 +4,7 @@
 #stop_time               = 2.2426211256
 stop_time               =   100e-6         # Max (simulated) time to evolve
 #stop_time =1.66481717925811447992
-#max_step                = 5          # Max number of time steps
+#max_step                = 100          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -16,15 +16,15 @@ incflo.cfl              =   0.1        # CFL factor
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            = 300           # Steps between plot files
+amr.plot_int            =  400     # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
-
+amr.plt_p   = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
 incflo.gravity          =   0.  0. 0.   # Gravitational force (3D)
-incflo.ro_0             =   1.0e-3         # Reference density 
+incflo.ro_0             =   1.0e-3     # Reference density 
 incflo.ntrac            =   1
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   1.8e-4         # Dynamic viscosity coefficient
@@ -41,7 +41,7 @@ incflo.sigma            =   72.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =  32 32 32      # Grid cells at coarsest AMRlevel
+amr.n_cell              =  32 64 32  # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size       =  64 128  64 
 
@@ -49,7 +49,7 @@ amr.max_grid_size       =  64 128  64
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   -60.e-4 0.      -60.e-4     # Lo corner coordinates
-geometry.prob_hi        =    60.e-4 120.e-4  60.e-4     # Hi corner coordinates
+geometry.prob_hi        =    60.e-4 240.e-4  60.e-4     # Hi corner coordinates
 geometry.is_periodic    =   0 0 0      # Periodicity x y z (0/1)
 geometry.coord_sys   =  0
 
@@ -58,22 +58,25 @@ geometry.coord_sys   =  0
 #.......................................#
 incflo.probtype         =   1109        #
 incflo.ic_u             =   0.
-incflo.ic_v             =   0.
+incflo.ic_v             =   100.
 incflo.ic_w             =   0.
+incflo.offset           = 35e-4
 # Boundary conditions
-ylo.type                =   "nsw"
-#ylo.pressure            =   0.
-ylo.tracer              =0.  
+ylo.type                =   "mi"
+#ylo.tracer              = 0
+#ylo.pressure            =   0
+ylo.velocity           = 0. .1 0.  
 yhi.type                =   "po"
-yhi.pressure            =   0.
-yhi.tracer              = 0.  
-xlo.type                =   "sw"
+#yhi.velocity           =0. .1 0.
+yhi.pressure            =   0.  
+#yhi.tracer              =  0.
+xlo.type                =   "nsw"
 #xlo.pressure            =   0.
-xhi.type                =   "sw"
+xhi.type                =   "nsw"
 #xhi.pressure            =   0.0
-zlo.type                =   "sw"
+zlo.type                =   "nsw"
 #zlo.pressure            =   0.
-zhi.type                =   "sw"
+zhi.type                =   "nsw"
 #zhi.pressure            =   0.0
 
 
@@ -93,7 +96,7 @@ incflo.use_cc_proj      =   1
 incflo.advect_momentum =  0
 incflo.number_of_averaging = 0
 incflo.diffusion_type = 2
-incflo.output_drop_frequence = 5
+incflo.output_drop_frequence = 10
 incflo.godunov_include_diff_in_forcing = 1
 incflo.use_mac_phi_in_godunov = 0
 incflo.godunov_use_forces_in_trans = 0

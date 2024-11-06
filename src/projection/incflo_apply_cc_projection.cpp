@@ -415,7 +415,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         average_mac_to_ccvel(GetArrOfPtrs(m_fluxes[lev]),*cc_gphi[lev]);
 //#endif
     }
-    // computer the cell-centered surface tension term (see note in VolumeOfFluid:: velocity_face_source)
+    // compute the cell-centered surface tension term (see note in VolumeOfFluid:: velocity_face_source)
     VolumeOfFluid*  vof_p = get_volume_of_fluid ();
     if(m_vof_advect_tracer)
       for (int lev=0; lev <= finest_level; ++lev)

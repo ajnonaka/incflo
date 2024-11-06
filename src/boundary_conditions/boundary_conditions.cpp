@@ -40,10 +40,14 @@ void incflo::init_bcs ()
                          m_bcrec_velocity[1].set(ori, BCType::foextrap);,
                          m_bcrec_velocity[2].set(ori, BCType::foextrap););
             m_bcrec_density[0].set(ori, BCType::foextrap);
-
+            //when the VOF method is used, the default BC for tracer (i.e., the keyword 'tracer'
+            //is not explicitly included in the bcid) is symmetrical.
             if ( pp.contains("tracer") ) {
                 for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
-            } else {
+            }else if(m_vof_advect_tracer){
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::reflect_even); }
+            }
+            else {
                 for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
             }
         }
@@ -59,11 +63,22 @@ void incflo::init_bcs ()
             AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::foextrap);,
                          m_bcrec_velocity[1].set(ori, BCType::foextrap);,
                          m_bcrec_velocity[2].set(ori, BCType::foextrap););
+            // Only normal oriection has reflect_even
+            //for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
+                //if (dim !=ori.coordDir())
+                 // m_bcrec_velocity[ori.coordDir()].set(ori, BCType::reflect_even);
+                //else
+                // m_bcrec_velocity[dim].set(ori, BCType::ext_dir);
+            //}
             m_bcrec_density[0].set(ori, BCType::foextrap);
-
+            //when the VOF method is used, the default BC for tracer (i.e., the keyword 'tracer'
+            //is not explicitly included in the bcid) is symmetrical.
             if ( pp.contains("tracer") ) {
                 for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
-            } else {
+            }else if(m_vof_advect_tracer){
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::reflect_even); }
+            }
+            else {
                 for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
             }
 
@@ -144,8 +159,12 @@ void incflo::init_bcs ()
                          m_bcrec_velocity[1].set(ori, BCType::ext_dir);,
                          m_bcrec_velocity[2].set(ori, BCType::ext_dir););
             m_bcrec_density[0].set(ori, BCType::foextrap);
+            //when the VOF method is used, the default BC for tracer (i.e., the keyword 'tracer'
+            //is not explicitly included in the bcid) is symmetrical.
             if ( pp.contains("tracer") ) {
                 for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
+            }else if(m_vof_advect_tracer){
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::reflect_even); }
             } else {
                 for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
             }

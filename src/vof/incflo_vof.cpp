@@ -32,9 +32,7 @@ incflo::update_vof_density (int lev, MultiFab & density, MultiFab & tracer)
         });
      }
      //fixme: BCs
-    density.FillBoundary(geom[lev].periodicity()); 
-
-       
+    density.FillBoundary(geom[lev].periodicity());        
 }
 
 

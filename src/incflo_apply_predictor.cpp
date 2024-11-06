@@ -153,7 +153,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
                        get_density_old_const(), get_tracer_old_const(), get_tracer_old_const(),
-                       include_pressure_gradient);
+                       include_pressure_gradient, m_use_cc_proj?false:true);
 
     // **********************************************************************************************
     // Compute the MAC-projected velocities at all levels

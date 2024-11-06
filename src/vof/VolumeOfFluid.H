@@ -26,7 +26,7 @@ public:
     void velocity_face_source(int lev,amrex::Real dt, AMREX_D_DECL(amrex::MultiFab& u_mac, amrex::MultiFab& v_mac,
                                                                    amrex::MultiFab& w_mac),
                               AMREX_D_DECL(amrex::MultiFab* sfu_mac, amrex::MultiFab* sfv_mac, amrex::MultiFab* sfw_mac));
-    void variable_filtered (amrex::MultiFab& variable);
+    void variable_filtered (int lev, amrex::MultiFab& variable);
 
 // normal vector of interface
    amrex::Vector<amrex::MultiFab> normal;

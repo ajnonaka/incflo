@@ -1693,10 +1693,13 @@ Real curvature_fit (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM> dx,
          Real fvol=vof(ni,nj,nk,0);
          if (!CELL_IS_FULL(fvol)){
             mx={AMREX_D_DECL(mv(ni,nj,nk,0),mv(ni,nj,nk,1),mv(ni,nj,nk,2))};
-            area=plane_area_center (mx, alpha(ni,nj,nk,0),p);
-            for (int c = 0; c < AMREX_SPACEDIM; c++)
-              (&p.x)[c] += (c==0?di:c==1?dj:dk) - 0.5;
-            parabola_fit_add (fit, {p.x,p.y,p.z}, area);
+            //fixme: the ghost cells in the physical boundary are not considerred.
+            if (mx.x!=VOF_NODATA){
+              area=plane_area_center (mx, alpha(ni,nj,nk,0),p);
+              for (int c = 0; c < AMREX_SPACEDIM; c++)
+                (&p.x)[c] += (c==0?di:c==1?dj:dk) - 0.5;
+              parabola_fit_add (fit, {p.x,p.y,p.z}, area);
+            }
          }
        }
    parabola_fit_solve (fit);
@@ -1731,7 +1734,7 @@ VolumeOfFluid::tracer_vof_update (int lev, MultiFab & vof_mf, Array<MultiFab,2> 
 
     height[0].setVal(VOF_NODATA,dim,1,v_incflo->nghost_state());
     height[1].setVal(VOF_NODATA,dim,1,v_incflo->nghost_state());
-    //fix me: have not thought of a way to deal with the MFIter with tiling
+    //fixme: have not thought of a way to deal with the MFIter with tiling
     //an option is to use similar way as MPI's implementation.
     for (MFIter mfi(vof_mf); mfi.isValid(); ++mfi) {
        Box const& bx = mfi.validbox();
@@ -1748,7 +1751,7 @@ VolumeOfFluid::tracer_vof_update (int lev, MultiFab & vof_mf, Array<MultiFab,2> 
        }); //end ParallelFor
 
     } //end MFIter
-    //fix me: temporary solution for MPI boundaries
+    //fixme: temporary solution for MPI boundaries
     height[0].FillBoundary(geom.periodicity());
     height[1].FillBoundary(geom.periodicity());
 
@@ -1842,7 +1845,8 @@ if(1){
     height[1].FillBoundary(geom.periodicity());
   }//end for dim
 
-
+  //fixme: need to change for BCs
+  normal[lev].setVal(VOF_NODATA,0,AMREX_SPACEDIM,v_incflo->nghost_state());
 /////////////////////////////////////////////////////////////////////////////////////////
 //update the normal and alpha
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -1889,10 +1893,11 @@ if(1){
           }
           for (int d = 0; d < AMREX_SPACEDIM; d++)
             (&m.x)[d]= mv(i,j,k,d);
-       /*    Print() <<" normal direction "<< m.x<<" "<<m.y<<" "<<m.z<<"("<<i<<","<<j<<","<<k<<")"
+          al(i,j,k)= plane_alpha (m, fvol);
+         /*  Print() <<" normal direction "<< m.x<<" "<<m.y<<" "<<m.z<<"("<<i<<","<<j<<","<<k<<")"
                        <<"vof"<<"  "<<fvol<<"\n";*/
                //if (i==22&&j==20&&k==19)
-              al(i,j,k)= plane_alpha (m, fvol);
+
 
                   /*    if (i==12&&j==7&&k==7)
               Print() <<" normal direction "<<"("<<i<<","<<j<<","<<k<<") "
@@ -2347,15 +2352,6 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
            // i.e., loop through the node-centered MultiFab.
            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
            {
-            /* if (i==4 &&j==8 &&k==4&& v_incflo->m_cur_time>1.99) {
-            Print() <<" vof_advection---dir "<<dir<<"  "<<m_flux_arr(i,j,k)<<"  "
-                      <<"("<<i<<","<<j<<","<<k<<")"<<"vof"<<"  "<<vof(i,j,k)<<"  "
-                      <<"vof_flux"<<"  "<<vof_flux_arr(i,j,k)<< "\n";
-            Print() <<" vof_advection---dir "<<dir<<"  "<<m_flux_arr(i,j-1,k)<<"  "
-                      <<"("<<i<<","<<(j-1)<<","<<k<<")"<<"vof"<<"  "<<vof(i,j-1,k)<<"  "
-                      <<"vof_flux"<<"  "<<vof_flux_arr(i,j-1,k)<< "\n";
-             }*/
-
              Real un=vel_mac_arr(i,j,k)*dt/dx[dir], s = (un < 0) ? -1 : (un > 0);
              /* if (fabs (un) > 0.51) {
                 Real x = Real(i+0.5)*dx[0];
@@ -2363,7 +2359,6 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
                 Real z = Real(k+0.5)*dx[2];
                 Print()<< "Warning: CFL "<<un<<" at ("<<x<<", "<<y<<", "<<z<<") is larger than 0.51!"<<"\n";
               }*/
-
 
              int det_u = -(s + 1.)/2., det_d=(s - 1.)/2.;
              Array <int, 3> index={i,j,k}, // store upwinding index
@@ -2381,17 +2376,27 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
                                                mv(index[0],index[1],index[2],2)
                                                )};
                Real alpha_v = al(index[0],index[1],index[2]);
-               if (un < 0.) {
+             if (i==15 &&j==0 &&k==15&& dir==1/*v_incflo->m_nstep==1975*/) {
+            AllPrint() <<" vof_advection---dir "<<dir<<"  "<<m_flux_arr(i,j,k)<<"  "
+                    <<"("<<i<<","<<j<<","<<k<<")"<<"vof"<<"  "<<vof(i,j,k)<<"  "
+                    <<"vof_flux"<<"  "<<vof_flux_arr(i,j,k)<<" "<<vof(i,j-1,k)<<" "<<un<< "\n";
+             }
+             //fixme: the ghost cells of the physical boundary have no valid normal vector data
+              if(m_v[0]!=VOF_NODATA){
+                if (un < 0.) {
                    m_v[dir]=-m_v[dir];
                    alpha_v+=m_v[dir];
-               }
-               Array<Real, AMREX_SPACEDIM> q0={AMREX_D_DECL(0.,0.,0.)},q1={AMREX_D_DECL(1.,1.,1.)};
-               q0[dir]=1.-fabs(un);
-               for (int dd = 0; dd < AMREX_SPACEDIM; dd++) {
+                }
+                Array<Real, AMREX_SPACEDIM> q0={AMREX_D_DECL(0.,0.,0.)},q1={AMREX_D_DECL(1.,1.,1.)};
+                q0[dir]=1.-fabs(un);
+                for (int dd = 0; dd < AMREX_SPACEDIM; dd++) {
                   alpha_v -= m_v[dd]*q0[dd];
                   m_v[dd] *= q1[dd] - q0[dd];
-               }
-               cf = plane_volume (m_v, alpha_v);
+                }
+                cf = plane_volume (m_v, alpha_v);
+              }
+              else
+                cf = fvol;
              }
              //Make sure we just update the cells in the valid box
              //upwinding cells
@@ -2451,15 +2456,16 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
                       <<"vof_flux"<<"  "<<vof_flux_arr(i,j,k)<< "\n";*/
            }); //  end ParallelFor
         }// end MFIter
-        //fix me: temporary solution for MPI boundary
+        //fixme: temporary solution for MPI boundary
         tracer[lev]->FillBoundary(geom.periodicity());
+        v_incflo->fillphysbc_tracer(lev, 0., *tracer[lev], 1);
 
 
 
         // update the normal and alpha of the plane in each interface cell after each sweep
         tracer_vof_update (lev, *tracer[lev], height[lev]);
      }// end i-,j-,k-sweep: calculation of vof advection
-        curvature_calculation (lev, *tracer[lev], height[lev], kappa[lev]);
+     curvature_calculation (lev, *tracer[lev], height[lev], kappa[lev]);
   }// end lev
   start = (start + 1) % AMREX_SPACEDIM;
 
@@ -2559,13 +2565,14 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
 
 }
 
-void VolumeOfFluid:: variable_filtered (MultiFab & variable)
+void VolumeOfFluid:: variable_filtered (int lev, MultiFab & variable)
 {
+    Geometry const& geom = v_incflo->Geom(lev);
     const auto& ba = variable.boxArray();
     const auto& dm = variable.DistributionMap();
     const auto& fact = variable.Factory();
-    MultiFab node_val(amrex::convert(ba,IntVect::TheNodeVector()),dm, 1, 0 , MFInfo(), fact);
-    MultiFab center_val(ba,dm,1,0,MFInfo(), fact);
+    MultiFab node_val(amrex::convert(ba,IntVect::TheNodeVector()),dm, 1, 0, MFInfo(), fact);
+    MultiFab center_val(ba,dm,1,1,MFInfo(), fact);
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -2595,6 +2602,8 @@ void VolumeOfFluid:: variable_filtered (MultiFab & variable)
        }
        average_node_to_cellcenter(center_val, 0, node_val, 0, 1,0);
        Copy(variable, center_val , 0, 0, 1, 0);
+       //fixme: BCs
+       variable.FillBoundary(geom.periodicity());
 }
 
 
@@ -2615,6 +2624,8 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     int vof_init_with_eb = 1;
     ParmParse pp("incflo");
     pp.query("vof_init_with_eb", vof_init_with_eb);
+    Real distance=0.;
+    pp.query("offset",distance);
 
     Geometry const& geom = v_incflo->Geom(lev);
     auto const& dx = geom.CellSizeArray();
@@ -2628,7 +2639,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
                                                            (problo[1]+.1),
                                                            (problo[2]+.45))};*/
             Array<Real,AMREX_SPACEDIM> center1{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
-                                                           (problo[1]+30.e-4),
+                                                           (problo[1]+distance),
                                                            0.5*(problo[2]+probhi[2]))};
             Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
                                                            0.5*(problo[1]+probhi[1]),
@@ -2793,8 +2804,9 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
         }
 
     }
+    //fixme: boundary conditions
     a_tracer.FillBoundary(geom.periodicity());
-
+    v_incflo->fillphysbc_tracer(lev, 0., a_tracer, 1);
 
     // Once vof tracer is initialized, we calculate the normal direction and alpha of the plane segment
     // intersecting each interface cell.
@@ -2986,7 +2998,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 #if AMREX_SPACEDIM==3
                       ", \"f_z\""<<
 #endif
-                      "\n";
+                      ", \"ftol\""<<"\n";
 
         for (int lev = 0; lev <= finest_level; ++lev) {
             bool m_use_cc_proj=v_incflo->m_use_cc_proj;
@@ -3023,7 +3035,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
                   TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
                 TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(m_use_cc_proj?AMREX_SPACEDIM+1:AMREX_SPACEDIM+2)<<"-"
-                            <<(AMREX_SPACEDIM==3?24:19)<<"]=CELLCENTERED)"
+                            <<(AMREX_SPACEDIM==3?25:20)<<"]=CELLCENTERED)"
                             << std::scientific << std::setprecision(6)
                             <<", SOLUTIONTIME="<<time<<"\n";
 
@@ -3238,7 +3250,23 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                     }
 
                 }//
-
+#if AMREX_SPACEDIM==3
+                    for (k = lo.z; k <= hi.z; ++k)
+#endif
+                    for (int j = lo.y; j <= hi.y; ++j) {
+                    for (int i = lo.x; i <= hi.x; ++i) {
+                      Real force=0.;
+                      for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
+                        force += force_arr(i,j,k,dim)*force_arr(i,j,k,dim);
+                      force = sqrt(force);
+                        TecplotFile << force<<" ";
+                        ++nn;
+                        if (nn > 100) {
+                            TecplotFile <<"\n";
+                            nn=0;
+                        }
+                    }
+                    }
                 TecplotFile <<"\n";
             } // end MFIter
 
@@ -3616,7 +3644,7 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
     for (int n = 0; n < n_tag; n++)
       range_update (kappa_range[n]);
  // the rest of the algorithm deals with  parallel BCs
-    if (ParallelDescriptor::NProcs()> 1){
+    if (ParallelDescriptor::NProcs()> 1 && n_tag > 0){
       Real sum[n_tag];
       /*sum number of cells of each drop from different pid*/
       ParallelDescriptor::ReduceIntSum(ncell,n_tag);
@@ -3847,6 +3875,7 @@ if (0){
      }
 
 // Write data to file
+     if (ndrops > 0)
      outputFile << std::scientific << std::setprecision(8) << time << ", "<<ndrops<<",  "
                 <<std::setprecision(8) << sumtotal<<", "<<error;
      for (int n = 0; n < n_tag && n < 7; n++){
@@ -3859,7 +3888,8 @@ if (0){
                   <<"k,"<<kappa_range[n].mean<<","<<kappa_range[n].min<<","<<kappa_range[n].max
                   <<","<<kappa_range[n].stddev;
      }
-     outputFile <<"\n";
+     if (ndrops > 0)
+      outputFile <<"\n";
      outputFile.close();
     }
     } // end lev
