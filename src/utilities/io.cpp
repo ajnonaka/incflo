@@ -597,6 +597,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                                            &vel_eta,
                                            &m_leveldata[lev]->density,
                                            &m_leveldata[lev]->velocity,
+                                           &m_leveldata[lev]->tracer,
                                            Geom(lev),
                                            m_cur_time, 0);
             }

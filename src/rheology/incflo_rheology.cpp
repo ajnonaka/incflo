@@ -89,7 +89,6 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
               eta_arr(i,j,k) = m_mu*(1.-tracer_arr(i,j,k,0))+m_mu_s[0]*tracer_arr(i,j,k,0);
             });
         }
-
       }
     }
     else
