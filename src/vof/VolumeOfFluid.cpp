@@ -3041,8 +3041,8 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
 
-                Array4<Real const> const& pa_nd = ld.p_nd.const_array(mfi);
-                Array4<Real const> const& pa_cc = ld.p_cc.const_array(mfi);
+
+                Array4<Real const> const& pa = m_use_cc_proj?ld.p_cc.const_array(mfi):ld.p_nd.const_array(mfi);
                 Array4<Real const> const& pa_mac = ld.mac_phi.const_array(mfi);
                 Array4<Real const> const& tracer = ld.tracer.const_array(mfi);
                 Array4<Real const> const& vel = ld.velocity.const_array(mfi);
@@ -3079,7 +3079,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 #endif
                 for (int j = lo.y; j <= hi.y+nt; ++j) {
                 for (int i = lo.x; i <= hi.x+nt; ++i) {
-                    TecplotFile << (m_use_cc_proj?pa_cc(i,j,k):pa_nd(i,j,k))<<" ";
+                    TecplotFile << pa(i,j,k)<<" ";
                     ++nn;
                     if (nn > 100) {
                         TecplotFile <<"\n";
