@@ -4,7 +4,7 @@
 #stop_time               = 2.2426211256
 stop_time               =   100e-6         # Max (simulated) time to evolve
 #stop_time =1.66481717925811447992
-#max_step                = 100          # Max number of time steps
+#max_step                = 10          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -60,7 +60,12 @@ incflo.probtype         =   1109        #
 incflo.ic_u             =   0.
 incflo.ic_v             =   100.
 incflo.ic_w             =   0.
-incflo.offset           = 35e-4
+
+#initialize the VOF field with AMREX EB functions
+incflo.vof_init_with_eb = 1
+#it is a spherical droplet
+incflo.vof_init          ="x*x+(y-35.e-4)*(y-35.e-4)+z*z-20.e-4*20.e-4"
+
 # Boundary conditions
 ylo.type                =   "mi"
 #ylo.tracer              = 0
@@ -90,7 +95,6 @@ amrex.fpe_trap_invalid  =   1           # Trap NaNs
 #              VERBOSITY                #
 #.......................................#
 incflo.verbose          =   2           # incflo_level
-incflo.vof_init_with_eb = 1
 amrex.fpe_trap_overflow=1
 incflo.use_cc_proj      =   1
 incflo.advect_momentum =  0

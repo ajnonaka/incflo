@@ -1,7 +1,6 @@
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-#stop_time               = 2.2426211256
 stop_time               =   1.588293017         # Max (simulated) time to evolve
 #stop_time =1.66481717925811447992
 max_step                = 20000          # Max number of time steps
@@ -16,7 +15,7 @@ incflo.cfl              =   0.002        # CFL factor
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =  1000           # Steps between plot files
+amr.plot_int            =  100           # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 
@@ -29,8 +28,6 @@ incflo.ntrac            =   1
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0182574185835055         # Dynamic viscosity coefficient
 incflo.vof_advect_tracer=   1
-#incflo.mu_s             = 0.0182574185835055
-#incflo.ro_s             =  1.0
 incflo.mu_s             =   0.000327650582754835 
 incflo.ro_s             =   .0012
 #incflo.mu_s             =   0.0182574185835055
@@ -41,7 +38,7 @@ incflo.sigma            =   1.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =  256 768      # Grid cells at coarsest AMRlevel
+amr.n_cell              =  128 384      # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size       =   256 768 
 
@@ -60,6 +57,12 @@ incflo.probtype         =   1109        #
 incflo.ic_u             =   0.
 incflo.ic_v             =   0.
 incflo.ic_w             =   0.
+
+#initialize the VOF field with AMREX EB functions
+incflo.vof_init_with_eb = 1
+#the interface is a cosin function
+incflo.vof_init          ="y - 0.01*cos(2.*3.14159265357*x)"
+
 # Boundary conditions
 ylo.type                =   "sw"
 #ylo.pressure            =   0.  
@@ -85,7 +88,6 @@ amrex.fpe_trap_invalid  =   1           # Trap NaNs
 #              VERBOSITY                #
 #.......................................#
 incflo.verbose          =   2           # incflo_level
-incflo.vof_init_with_eb = 1
 amrex.fpe_trap_overflow=1
 incflo.use_cc_proj      =   1
 incflo.advect_momentum =  0

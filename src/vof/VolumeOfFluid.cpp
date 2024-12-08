@@ -2498,7 +2498,9 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
        Box const& bx = mfi.tilebox();
        Box const& xbx = mfi.nodaltilebox(0);
        Box const& ybx = mfi.nodaltilebox(1);
+#if AMREX_SPACEDIM==3
        Box const& zbx = mfi.nodaltilebox(2);
+#endif
        Array4<Real const> const& rho   = ld.density.const_array(mfi);
        Array4<Real const> const& tra   = ld.tracer.const_array(mfi);
        Array4<Real const> const& kap   = kappa[lev].const_array(mfi);
@@ -2625,7 +2627,6 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     ParmParse pp("incflo");
     pp.query("vof_init_with_eb", vof_init_with_eb);
     Real distance=0.;
-    pp.query("offset",distance);
 
     Geometry const& geom = v_incflo->Geom(lev);
     auto const& dx = geom.CellSizeArray();
@@ -2635,10 +2636,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 #ifdef AMREX_USE_EB
     if (vof_init_with_eb) {
         if (lev == 0) {
-           /* Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL((problo[0]+.45),
-                                                           (problo[1]+.1),
-                                                           (problo[2]+.45))};*/
-            Array<Real,AMREX_SPACEDIM> center1{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
+           /* Array<Real,AMREX_SPACEDIM> center1{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
                                                            (problo[1]+distance),
                                                            0.5*(problo[2]+probhi[2]))};
             Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
@@ -2651,16 +2649,14 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
             EB2::SphereIF my_sphere1(radius, center1, fluid_is_inside);
 
             Array<Real,AMREX_SPACEDIM> radii{AMREX_D_DECL(.2, .3, .25)};
-            EB2::EllipsoidIF my_ellipsoid(radii, center, fluid_is_inside);
+            EB2::EllipsoidIF my_ellipsoid(radii, center, fluid_is_inside);*/
 
     // Initialise cylinder parameters
-    int direction = 2;
-    Real height = 1.6;
-
-
-    center[0]=0.5*(problo[0]+probhi[0]);
-    center[1]=0.5*(problo[1]+probhi[1]);
-    center[2]=0.5*(problo[1]+probhi[1]);
+   // int direction = 2;
+    //Real height = 1.6;
+    //center[0]=0.5*(problo[0]+probhi[0]);
+    //center[1]=0.5*(problo[1]+probhi[1]);
+    //center[2]=0.5*(problo[1]+probhi[1]);
     // Build the Cylinder implficit function representing the curved walls
     //EB2::CylinderIF my_cyl(radius, height, direction, center, true);
     //radius = 8.0*dx[0];
@@ -2673,27 +2669,37 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     Array<Real,AMREX_SPACEDIM> high{AMREX_D_DECL((probhi[0]-11.2*dx[0]),
                                                  (probhi[1]-11.2*dx[1]),
                                                  (probhi[2]-11.2*dx[2]))};    */
-   Array<Real,AMREX_SPACEDIM> low{AMREX_D_DECL( (0.5*(problo[0]+probhi[0])-.2),
+   /*Array<Real,AMREX_SPACEDIM> low{AMREX_D_DECL( (0.5*(problo[0]+probhi[0])-.2),
                                                 (0.5*(problo[1]+probhi[1])-.2),
                                                 (0.5*(problo[2]+probhi[2])-.2))};
     Array<Real,AMREX_SPACEDIM> high{AMREX_D_DECL((0.5*(problo[0]+probhi[0])+.2),
                                                  (0.5*(problo[1]+probhi[1])+.2),
                                                  (0.5*(problo[2]+probhi[2])+.2))};
-    auto my_box= EB2::BoxIF( low,  high, fluid_is_inside);
+    auto my_box= EB2::BoxIF( low,  high, fluid_is_inside);*/
     //auto my_box=  EB2::rotate(EB2::BoxIF( low,  high, fluid_is_inside), .3, 1);
     //auto my_box1=  EB2::rotate(my_box, .3, 0);
     //auto my_box2=  EB2::rotate(my_box1, .2, 2);
     //auto two = EB2::makeIntersection(my_sphere, my_box);
    //auto two = EB2::makeComplement(EB2::makeUnion(my_cyl_1, my_cyl));
-   auto my_sin = EB2::DevicePtrIF(&myFunction);
-
-    // Generate GeometryShop
     //auto gshop = EB2::makeShop(two);
     //auto gshop = EB2::makeShop(my_box);
-    auto gshop = EB2::makeShop(my_sphere1);
-   //auto gshop = EB2::makeShop(my_cyl);
-            int max_level = v_incflo->maxLevel();
-            EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
+    //auto gshop = EB2::makeShop(my_sphere1);
+            std::string vof_init_func;
+            pp.query("vof_init", vof_init_func);
+            if (vof_init_func.empty()) {
+              std::cout << "Warning: VOF is not initialized!" << std::endl;
+            }
+            else {
+              Parser parser(vof_init_func);
+              parser.registerVariables({AMREX_D_DECL("x","y","z")});
+              auto fun = parser.compile<AMREX_SPACEDIM>();
+              auto user_defined_vof = EB2::DevicePtrIF(&fun);
+            // Generate GeometryShop
+
+              auto gshop = EB2::makeShop(user_defined_vof);
+              int max_level = v_incflo->maxLevel();
+              EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
+            }
         }
 
         auto fact = amrex::makeEBFabFactory(geom, a_tracer.boxArray(), a_tracer.DistributionMap(),
