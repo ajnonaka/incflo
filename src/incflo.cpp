@@ -158,7 +158,7 @@ void incflo::Evolve()
             amrex::Print() << "\n ============   NEW TIME STEP   ============ \n";
         }
 
-        if (m_regrid_int > 0 && m_nstep > 0 && m_nstep%m_regrid_int == 0)
+        if (m_regrid_int > 0 && m_nstep > 0 && m_nstep%m_regrid_int == 0||vof_regrid)
         {
             if (m_verbose > 0) amrex::Print() << "Regridding...\n";
             regrid(0, m_cur_time);
@@ -167,7 +167,7 @@ void incflo::Evolve()
             }
         }
         if(m_vof_advect_tracer){
-        get_volume_of_fluid()->output_droplet(m_cur_time,m_nstep);
+          get_volume_of_fluid()->output_droplet(m_cur_time,m_nstep);
         //if (m_nstep<10)
         //get_volume_of_fluid()->apply_velocity_field(m_cur_time,m_nstep);
         }
@@ -284,6 +284,12 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 
     m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_factory[lev],
                                                    this);
+
+    if (m_vof_advect_tracer){
+     get_volume_of_fluid()->m_leveldata[lev] = std::make_unique<VolumeOfFluid::LevelData>
+                                                (grids[lev], dmap[lev], *m_factory[lev],this);
+    }
+
 
     m_t_new[lev] = time;
     m_t_old[lev] = time - Real(1.e200);

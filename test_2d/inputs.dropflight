@@ -4,7 +4,7 @@
 #stop_time               = 2.2426211256
 stop_time               =   100e-6         # Max (simulated) time to evolve
 #stop_time =1.66481717925811447992
-#max_step                = 10          # Max number of time steps
+#max_step                = 2000          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -16,7 +16,7 @@ incflo.cfl              =   0.1        # CFL factor
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =  400     # Steps between plot files
+amr.plot_int            =  200   # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 amr.plt_p   = 1
@@ -41,9 +41,10 @@ incflo.sigma            =   72.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =  32 64   # Grid cells at coarsest AMRlevel
-amr.max_level           =   0           # Max AMR level in hierarchy 
-amr.max_grid_size       =  64 128  
+amr.n_cell              =  8 16   # Grid cells at coarsest AMRlevel
+amr.max_level           =   3           # Max AMR level in hierarchy 
+amr.regrid_int          =   1000
+amr.max_grid_size       =  32 64  
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #

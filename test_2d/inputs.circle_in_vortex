@@ -1,58 +1,57 @@
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-stop_time               =   1.588293017         # Max (simulated) time to evolve
+#stop_time               = 2.2426211256
+stop_time               =   8         # Max (simulated) time to evolve
 #stop_time =1.66481717925811447992
-#max_step                = 20000          # Max number of time steps
+#max_step                = 100          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-#incflo.fixed_dt        =   .1         # Use this constant dt if > 0
-incflo.cfl              =   0.005        # CFL factor
+#incflo.fixed_dt        =   1e-7         # Use this constant dt if > 0
+incflo.cfl              =   0.2        # CFL factor
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =  500           # Steps between plot files
-amr.check_int           =   10000        # Steps between checkpoint files
+amr.plot_int            =  100     # Steps between plot files
+amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
-
+amr.plt_p   = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
-incflo.gravity          =   0.  0.    # Gravitational force (3D)
-incflo.ro_0             =   1.0         # Reference density 
+incflo.gravity          =   0.  0. 0.   # Gravitational force (3D)
+incflo.ro_0             =   1.     # Reference density 
 incflo.ntrac            =   1
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
-incflo.mu               =   0.0182574185835055         # Dynamic viscosity coefficient
+incflo.mu               =   1         # Dynamic viscosity coefficient
 incflo.vof_advect_tracer=   1
-incflo.mu_s             =   0.000327650582754835 
-incflo.ro_s             =   .0012
+#incflo.mu_s             = 0.0182574185835055
+#incflo.ro_s             =  1.0
+incflo.mu_s             =   1 
+incflo.ro_s             =   1.
 #incflo.mu_s             =   0.0182574185835055
 #incflo.ro_s             =   .1
 
-incflo.sigma            =   1.
+incflo.sigma            =   0.
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-#amr.n_cell              =  128 384      # Grid cells at coarsest AMRlevel
-amr.n_cell              =  8 24 
-amr.max_level           =   3           # Max AMR level in hierarchy 
-amr.max_grid_size       =   64 
-#amr.blocking_factor = 4
-incflo.tag_region = 1
-incflo.tag_region_lo = -.5 -.5
-incflo.tag_region_hi = .5 .5 
+amr.n_cell              =  16 16   # Grid cells at coarsest AMRlevel
+amr.max_level           =   4           # Max AMR level in hierarchy 
+amr.regrid_int          =   4000
+amr.max_grid_size       =  128 128  
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =   -.5  -1.5     # Lo corner coordinates
-geometry.prob_hi        =    .5   1.5    # Hi corner coordinates
-geometry.is_periodic    =   1 0       # Periodicity x y z (0/1)
+geometry.prob_lo        =   -.5 -.5           # Lo corner coordinates
+geometry.prob_hi        =    .5  .5      # Hi corner coordinates
+geometry.is_periodic    =   0 0       # Periodicity x y z (0/1)
 geometry.coord_sys   =  0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -65,21 +64,22 @@ incflo.ic_w             =   0.
 
 #initialize the VOF field with AMREX EB functions
 incflo.vof_init_with_eb = 1
-#the interface is a cosin function
-incflo.vof_init          ="y - 0.01*cos(2.*3.14159265357*x)"
+#it is a spherical droplet
+incflo.vof_init          ="x*x+(y-.25)*(y-.25)-.15*.15"
+
 # Boundary conditions
 ylo.type                =   "sw"
-#ylo.pressure            =   0.  
+#ylo.tracer              = 0
+#ylo.pressure            =   0
+#ylo.velocity           = 0. .1 0.  
 yhi.type                =   "sw"
+#yhi.velocity           =0. .1 0.
 #yhi.pressure            =   0.  
-#xlo.type                =   "po"
-#xlo.pressure            =   0.
-#xhi.type                =   "po"
-#xhi.pressure            =   0.0
-#zlo.type                =   "po"
-#zlo.pressure            =   0.
-#zhi.type                =   "po"
-#zhi.pressure            =   0.0
+#yhi.tracer              =  0.
+xlo.type                =   "nsw"
+xlo.pressure            =   0.
+xhi.type                =   "nsw"
+xhi.pressure            =   0.0
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -93,11 +93,12 @@ amrex.fpe_trap_invalid  =   1           # Trap NaNs
 #.......................................#
 incflo.verbose          =   2           # incflo_level
 amrex.fpe_trap_overflow=1
-incflo.use_cc_proj      =   1
+incflo.use_cc_proj      =   0
 incflo.advect_momentum =  0
-incflo.number_of_averaging = 2
+incflo.number_of_averaging = 0
 incflo.diffusion_type = 2
-incflo.output_drop_frequence = 7
+incflo.output_drop_frequence = 5
+incflo.plot_leaf_cells = 1 #only plot data on cells without underlying finer grid
 incflo.godunov_include_diff_in_forcing = 1
 incflo.use_mac_phi_in_godunov = 0
 incflo.godunov_use_forces_in_trans = 0

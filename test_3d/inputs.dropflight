@@ -41,9 +41,11 @@ incflo.sigma            =   72.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =  32 64 32  # Grid cells at coarsest AMRlevel
-amr.max_level           =   0           # Max AMR level in hierarchy 
-amr.max_grid_size       =  64 128  64 
+#amr.n_cell              =  32 64 32  # Grid cells at coarsest AMRlevel
+#amr.max_level           =   0           # Max AMR level in hierarchy 
+amr.n_cell              =  8 16 8
+amr.max_level           = 2
+amr.max_grid_size       =  32 64  32 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #

@@ -46,8 +46,12 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
-
-    p_volume_of_fluid.reset();
+    if (m_vof_advect_tracer){
+      std::unique_ptr<VolumeOfFluid::LevelData> new_leveldata_vof
+                 (new VolumeOfFluid::LevelData(ba, dm, *m_factory[lev], this));
+      get_volume_of_fluid()->m_leveldata[lev] = std::move(new_leveldata_vof);
+    }
+    //ptr_VOF.reset();
 
     // Note: finest_level has not yet been updated and so we use lev
 #ifdef AMREX_USE_EB
@@ -86,7 +90,11 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     fillpatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillpatch_density(lev, time, new_leveldata->density, 0);
     if (m_ntrac > 0) {
-        fillpatch_tracer(lev, time, new_leveldata->tracer, 0);
+// Updated to include the patch for one layer of ghost cells in the multifab 'tracer'.
+// This is necessary because 'tracer_vof_advection' is called before 'tracer'
+// is updated in incflo::ApplyPredictor. The VOF advection process requires
+// ghost cell values to compute fluxes for cells adjacent to the boundary.
+        fillpatch_tracer(lev, time, new_leveldata->tracer, 1);
     }
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
 
@@ -103,8 +111,28 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
+    if (m_vof_advect_tracer){
+      std::unique_ptr<VolumeOfFluid::LevelData> new_leveldata_vof
+                 (new VolumeOfFluid::LevelData(ba, dm, *m_factory[lev], this));
+      get_volume_of_fluid()->m_leveldata[lev] = std::move(new_leveldata_vof);
+      //fixme: it may be better to move the following to incflo::Evolve() after calling regrid()
+      auto& ldvof=*ptr_VOF->m_leveldata[lev]; /*VOF data for level lev*/
+      ptr_VOF->tracer_vof_update(lev, m_leveldata[lev]->tracer, ldvof.height);
+      ptr_VOF->curvature_calculation(lev, m_leveldata[lev]->tracer, ldvof.height, ldvof.kappa);
+      //diffuse the VOF by averaging
+      const auto& ba = m_leveldata[lev]->tracer.boxArray();
+      const auto& dm = m_leveldata[lev]->tracer.DistributionMap();
+      MultiFab tracer_df(ba,dm,1,m_leveldata[lev]->tracer.nGrow(),MFInfo(), *m_factory[lev]);
+      MultiFab::Copy(tracer_df, m_leveldata[lev]->tracer, 0, 0, 1, m_leveldata[lev]->tracer.nGrow());
+      for (int i=0;i<m_number_of_averaging;i++){
+         ptr_VOF->variable_filtered(lev, tracer_df);
+      }
+      update_vof_density (lev, m_leveldata[lev]->density, tracer_df);
 
-    p_volume_of_fluid.reset();
+      //auto tag_vector_ptrs = ptr_VOF->get_vector_ptr([](VolumeOfFluid::LevelData& ld) -> MultiFab& {return ld.tag;});
+      //ptr_VOF->domain_tag_droplets (lev, grids, geom, get_tracer_new(),tag_vector_ptrs);
+    }
+    //ptr_VOF.reset();
 
 #ifdef AMREX_USE_EB
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
@@ -129,6 +157,10 @@ void incflo::ClearLevel (int lev)
     m_factory[lev].reset();
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
-    p_volume_of_fluid.reset();
     macproj.reset();
+    if (m_vof_advect_tracer){
+        ptr_VOF->m_leveldata[lev].reset();
+    }
+    //ptr_VOF.reset();
+
 }

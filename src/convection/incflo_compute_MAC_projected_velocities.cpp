@@ -183,12 +183,12 @@ incflo::compute_MAC_projected_velocities (
                                                        AMREX_D_DECL(nullptr, nullptr, nullptr));
 
 
-if(0){
-//The following is only used for testing the pure advection of VOF algorithm
-//Average the cell-centered velocity to face center as MAC velocity
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
+  if(0){
+     //The following is only used for testing the pure advection of VOF algorithm
+     //Average the cell-centered velocity to face center as MAC velocity
+     #ifdef _OPENMP
+     #pragma omp parallel if (Gpu::notInLaunchRegion())
+     #endif
        for (MFIter mfi(*vel[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
        {
          // Note nodaltilebox will not include the nodal index beyond boundaries between neighboring
@@ -220,8 +220,8 @@ if(0){
           )    // end AMREX_D_TERM
 
         }
-        return;
-}//test
+        if (lev == finest_level) return;
+     }//test
     }
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);

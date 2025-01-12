@@ -1,7 +1,7 @@
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-stop_time               =   8         # Max (simulated) time to evolve
+stop_time               =   6         # Max (simulated) time to evolve
 max_step                =   10000          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
@@ -27,7 +27,7 @@ incflo.ntrac            =   1
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   1.e-3         # Dynamic viscosity coefficient
 incflo.vof_advect_tracer=   1
-incflo.mu_s             =   1.0 
+incflo.mu_s             =   2.0 
 incflo.ro_s             =   1000.0
 incflo.sigma            =   10.
 
@@ -35,8 +35,10 @@ incflo.sigma            =   10.
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
 amr.n_cell              =   32 32      # Grid cells at coarsest AMRlevel
-amr.max_level           =   0           # Max AMR level in hierarchy 
-amr.max_grid_size       =   32 32 
+amr.max_level           =   3           # Max AMR level in hierarchy 
+amr.max_grid_size       =   128 128 
+amr.n_error_buf    = 4 
+
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
@@ -85,7 +87,8 @@ incflo.verbose          =   2           # incflo_level
 amrex.fpe_trap_overflow=1
 incflo.use_cc_proj      =   1
 incflo.advect_momentum =  0
-incflo.number_of_averaging = 1
+incflo.number_of_averaging = 3
+incflo.output_drop_frequence = 10
 incflo.diffusion_type = 2
 incflo.godunov_include_diff_in_forcing = 1
 incflo.use_mac_phi_in_godunov = 0

@@ -38,6 +38,8 @@ incflo::update_vof_density (int lev, MultiFab & density, MultiFab & tracer)
 
 VolumeOfFluid*  incflo::get_volume_of_fluid ()
 {
-    if (!p_volume_of_fluid) p_volume_of_fluid = std::make_unique<VolumeOfFluid>(this);
-    return p_volume_of_fluid.get();
+    if (!ptr_VOF) {
+        ptr_VOF = std::make_unique<VolumeOfFluid>(this);
+    }
+    return ptr_VOF.get();
 }

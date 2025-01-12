@@ -571,10 +571,20 @@ private:
     bool m_vof_advect_tracer = false;
     //Use VOF to update the density
     bool m_update_density_from_vof = false;
+    // Use this flag to plot results on leaf cells only.
+    // Leaf cells  have no finer sub-grid beneath them.
+    bool m_plot_leaf_cells = true;
     // density of the phase represented by VOF=1
     amrex::Vector<amrex::Real> m_ro_s;
     // surface tension
     amrex::Vector<amrex::Real> m_sigma;
+// Flag 'vof_regrid' indicates when to trigger domain remeshing by calling regrid().
+// Remeshing occurs when interface cells are within a specified distance from
+// the box boundary, particularly near fine-coarse boundaries. The distance is
+// defined by 'm_vof_regrid_layer', representing the number of cell layers
+// perpendicular to the box and fine-coarse boundaries.
+    bool vof_regrid = false;
+    int  m_vof_regrid_layers = 2;
 
     int m_plot_int = -1;
 
@@ -730,7 +740,7 @@ private:
     std::unique_ptr<DiffusionScalarOp> m_diffusion_scalar_op;
 
     //vof class pointer
-    std::unique_ptr<VolumeOfFluid> p_volume_of_fluid;
+    std::unique_ptr<VolumeOfFluid> ptr_VOF;
     //
     // end of member variables
     //

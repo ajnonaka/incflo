@@ -342,8 +342,6 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
     //fixme: we just consider the surface tension for first tracer
 if(0){
     if (m_vof_advect_tracer && m_sigma[0]!=0.){
-      VolumeOfFluid*  vof_p = get_volume_of_fluid ();
-
 
       for (int lev = 0; lev <= finest_level; lev++)
         {
@@ -383,7 +381,7 @@ if(0){
        Box const& ybx = mfi.nodaltilebox(1);
        Box const& zbx = mfi.nodaltilebox(2);
        Array4<Real const> const& tra   = ld.tracer.const_array(mfi);
-       Array4<Real const> const& kap   = vof_p->kappa[lev].const_array(mfi);
+       Array4<Real const> const& kap   = ptr_VOF->m_leveldata[lev]->kappa.const_array(mfi);
        AMREX_D_TERM( Array4<Real > const& xfv = face_val[0].array(mfi);,
                      Array4<Real > const& yfv = face_val[1].array(mfi);,
                      Array4<Real > const& zfv = face_val[2].array(mfi););
@@ -495,7 +493,7 @@ static int oct[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
          }
        });
 
-       Array4<Real>  const& forarr  = vof_p->force[lev].array(mfi);
+       Array4<Real>  const& forarr  = ptr_VOF->m_leveldata[lev]->force.array(mfi);
        Array4<Real> const& vel = ld.velocity.array(mfi);
        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
        {

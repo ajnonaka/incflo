@@ -172,6 +172,8 @@ void incflo::ReadParameters ()
             m_constant_density = false;
         }
         pp.query("number_of_averaging", m_number_of_averaging);
+        pp.query("vof_regrid_layers", m_vof_regrid_layers);
+        pp.query("plot_leaf_cells", m_plot_leaf_cells);
 
     } // end prefix incflo
 
@@ -226,7 +228,7 @@ void incflo::ReadParameters ()
 #endif
 
     if (m_use_cc_proj && max_level > 0) {
-        amrex::Abort("Can't yet do multilevel with cell-centered projection");
+//        amrex::Abort("Can't yet do multilevel with cell-centered projection");
     }
 }
 

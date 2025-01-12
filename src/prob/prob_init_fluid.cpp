@@ -1179,16 +1179,16 @@ void incflo::init_droplet (Box const& vbx, Box const& /*gbx*/,
         Real y = Real(j+0.5)*dx[1];
         Real z = Real(k+0.5)*dx[2];
         Real pi = 3.14159265357;
-        if (tracer(i,j,k)>1e-4) {
+       // if (tracer(i,j,k)>1e-4) {
          vel(i,j,k,0) = m_ic_u;//2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*0./3.);
          vel(i,j,k,1) = m_ic_v;//-sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*0./3.);
 #if (AMREX_SPACEDIM == 3)
          vel(i,j,k,2) = m_ic_w;//-sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*0./3.);
 #endif
-        }
-        else {
-        AMREX_D_TERM(vel(i,j,k,0) = 0.;,vel(i,j,k,1) = 0.;,vel(i,j,k,2) = 0.;);
-        }
+     //   }
+     //   else {
+     //   AMREX_D_TERM(vel(i,j,k,0) = 0.;,vel(i,j,k,1) = 0.;,vel(i,j,k,2) = 0.;);
+     //   }
 
     });
 }

@@ -158,11 +158,8 @@ void incflo::compute_vel_forces_on_level (int lev,
     // grad(VOF): gradient of VOF field variable
     // rho:   density
 
-    //fixme: we just consider the surface tension for first tracer
+    //fixme: we just consider the surface tension for the first tracer
     if (m_vof_advect_tracer && m_sigma[0]!=0./*&&!m_use_cc_proj*/&&include_SF){
-
-      VolumeOfFluid*  vof_p = get_volume_of_fluid ();
-
       //choice 1: The original cell-centered kappa and rho are averaged to face center. Grad(VOF) and
       // surface tension (SF) are calculated at face center. Then the face-centered SF is finally averaged to cell center.
       //choice 2: Similar to choice 1, SF is estimated at the face center and then averaged to the cell nodes.
@@ -210,7 +207,7 @@ void incflo::compute_vel_forces_on_level (int lev,
            Box const& ybx = surroundingNodes(bx,1);,
            Box const& zbx = surroundingNodes(bx,2););
          Array4<Real const> const& tra   = tracer_new.const_array(mfi);
-         Array4<Real const> const& kap   = vof_p->kappa[lev].const_array(mfi);
+         Array4<Real const> const& kap   = ptr_VOF->m_leveldata[lev]->kappa.const_array(mfi);
          AMREX_D_TERM(Array4<Real > const& xfv = face_val[0].array(mfi);,
                       Array4<Real > const& yfv = face_val[1].array(mfi);,
                       Array4<Real > const& zfv = face_val[2].array(mfi););
@@ -261,7 +258,7 @@ void incflo::compute_vel_forces_on_level (int lev,
          // immediately calculate the cell-centered surface tension force using the face-centered value
          // If we uncomment the following, we must use surroundingNodes() to define the index space (i.e.,
          // xbx, ybx, zbx) for cell faces in the beginning.
-          Array4<Real>  const& forarr  = vof_p->force[lev].array(mfi);
+          Array4<Real>  const& forarr  = ptr_VOF->m_leveldata[lev]->force.array(mfi);
           Array4<Real>  const& vel_f   = vel_forces.array(mfi);
           ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
           {
@@ -299,7 +296,7 @@ void incflo::compute_vel_forces_on_level (int lev,
                       Box const& ybx = mfi.nodaltilebox(1);,
                       Box const& zbx = mfi.nodaltilebox(2););
          Array4<Real const> const& tra   = tracer_new.const_array(mfi);
-         Array4<Real const> const& kap   = vof_p->kappa[lev].const_array(mfi);
+         Array4<Real const> const& kap   = ptr_VOF->m_leveldata[lev]->kappa.const_array(mfi);
          AMREX_D_TERM( Array4<Real > const& xfv = face_val[0].array(mfi);,
                      Array4<Real > const& yfv = face_val[1].array(mfi);,
                      Array4<Real > const& zfv = face_val[2].array(mfi););
@@ -395,7 +392,7 @@ void incflo::compute_vel_forces_on_level (int lev,
               if(nt>0) nv(i,j,k,dim)/= Real(nt);
             }
          });
-         Array4<Real>  const& forarr  = vof_p->force[lev].array(mfi);
+         Array4<Real>  const& forarr  = ptr_VOF->m_leveldata[lev]->force.array(mfi);
          Array4<Real>  const& vel_f   = vel_forces.array(mfi);
          ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
          {
@@ -431,7 +428,7 @@ static int oct[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
          Box const& vbx = mfi.validbox();
          Array4<Real > const& nv = node_val.array(mfi);
          Array4<Real const> const& tra   = tracer_new.const_array(mfi);
-         Array4<Real const> const& kappa = vof_p->kappa[lev].const_array(mfi);
+         Array4<Real const> const& kappa = ptr_VOF->m_leveldata[lev]->kappa.const_array(mfi);
          Array4<Real const> const& rho   = density.const_array(mfi);
          ParallelFor(nbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
          {
@@ -486,9 +483,9 @@ static int oct[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
        Box const& vbx  = mfi.validbox();
        Array4<Real > const& nv = node_val.array(mfi);
        Array4<Real const> const& tra   = tracer_new.const_array(mfi);
-       Array4<Real const> const& kappa = vof_p->kappa[lev].const_array(mfi);
+       Array4<Real const> const& kappa = ptr_VOF->m_leveldata[lev]->kappa.const_array(mfi);
        Array4<Real const> const& rho   = density.const_array(mfi);
-       Array4<Real>  const& forarr  = vof_p->force[lev].array(mfi);
+       Array4<Real>  const& forarr  = ptr_VOF->m_leveldata[lev]->force.array(mfi);
        Array4<Real>  const& vel_f   = vel_forces.array(mfi);
        Array4<Real>  const& center  = center_val.array(mfi);
        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -541,8 +538,8 @@ static int oct[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
           Array4<Real>       const& vel_f = vel_forces.array(mfi);
           Array4<Real const> const& rho   = density.const_array(mfi);
           Array4<Real const> const& tra   = tracer_new.const_array(mfi);
-          Array4<Real const> const& kappa = vof_p->kappa[lev].const_array(mfi);
-          Array4<Real >      const& forarr  = vof_p->force[lev].array(mfi);
+          Array4<Real const> const& kappa = ptr_VOF->m_leveldata[lev]->kappa.const_array(mfi);
+          Array4<Real >      const& forarr  = ptr_VOF->m_leveldata[lev]->force.array(mfi);
           ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
           {
             if(kappa(i,j,k,0)!=VOF_NODATA){

@@ -195,4 +195,27 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
         } // mfi
     } // if m_refine_particles
 #endif
+
+    if(m_vof_advect_tracer){
+
+     MultiFab &  tracer = m_leveldata[levc]->tracer;
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+     for (MFIter mfi(tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+     {
+        Box const& bx = mfi.tilebox();
+        Array4<Real const> const& tracer_arr = tracer.const_array(mfi);
+        auto const& tag = tags.array(mfi);
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+          if (tracer_arr(i,j,k) > 0. && tracer_arr(i,j,k) < 1.) {
+            tag(i,j,k) = tagval;
+          }
+        });
+     }
+
+
+
+    }
 }

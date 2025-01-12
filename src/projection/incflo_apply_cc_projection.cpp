@@ -416,16 +416,16 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 //#endif
     }
     // compute the cell-centered surface tension term (see note in VolumeOfFluid:: velocity_face_source)
-    VolumeOfFluid*  vof_p = get_volume_of_fluid ();
-    if(m_vof_advect_tracer)
+
+    if(m_vof_advect_tracer){
       for (int lev=0; lev <= finest_level; ++lev)
       {
         AMREX_D_TERM(Copy(m_fluxes[lev][0],sfu_mac[lev], 0, 0, 1, 0);,
                      Copy(m_fluxes[lev][1],sfv_mac[lev], 0, 0, 1, 0);,
                      Copy(m_fluxes[lev][2],sfw_mac[lev], 0, 0, 1, 0););
-        average_mac_to_ccvel(GetArrOfPtrs(m_fluxes[lev]),vof_p->force[lev]);
+        average_mac_to_ccvel(GetArrOfPtrs(m_fluxes[lev]),ptr_VOF->m_leveldata[lev]->force);
       }
-
+    }
     for(int lev = 0; lev <= finest_level; lev++)
     {
         auto& ld = *m_leveldata[lev];
@@ -441,7 +441,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 
             Array4<Real> const& u = ld.velocity.array(mfi);
             Array4<Real const> const& rho = density[lev]->const_array(mfi);
-            Array4<Real const> const& gsf = vof_p->force[lev].const_array(mfi);
+            Array4<Real const> const& gsf = ptr_VOF->m_leveldata[lev]->force.const_array(mfi);
 
             Real r0 = m_ro_0;
 
