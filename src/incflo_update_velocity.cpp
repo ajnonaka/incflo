@@ -338,6 +338,70 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 
+    // grad div filter
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        auto& ld = *m_leveldata[lev];
+        auto const dx = geom[lev].CellSizeArray();
+
+        MultiFab gd(ld.velocity.boxArray(), ld.velocity.DistributionMap(), 3, 0);
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.tilebox();
+            Array4<Real> const& vel = ld.velocity.array(mfi);
+            Array4<Real> const& graddiv = gd.array(mfi);
+            
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                Real div_xlo = ( vel(i,j,k,0) - vel(i-1,j,k,0) ) / dx[0] +
+                    ( vel(i,j+1,k,0) - vel(i-1,j+1,k,0) + vel(i,j-1,k,0) - vel(i-1,j-1,k,0) ) / (4.*dx[1]) +
+                    ( vel(i,j,k+1,0) - vel(i-1,j,k+1,0) + vel(i,j,k-1,0) - vel(i-1,j,k-1,0) ) / (4.*dx[2]);
+                Real div_xhi = ( vel(i+1,j,k,0) - vel(i,j,k,0) ) / dx[0] +
+                    ( vel(i+1,j+1,k,0) - vel(i,j+1,k,0) + vel(i+1,j-1,k,0) - vel(i,j-1,k,0) ) / (4.*dx[1]) +
+                    ( vel(i+1,j,k+1,0) - vel(i,j,k+1,0) + vel(i+1,j,k-1,0) - vel(i,j,k-1,0) ) / (4.*dx[2]);
+                Real div_ylo = ( vel(i,j,k,1) - vel(i,j-1,k,1) ) / dx[1] +
+                    ( vel(i+1,j,k,1) - vel(i+1,j-1,k,1) + vel(i-1,j,k,1) - vel(i-1,j-1,k,1) ) / (4.*dx[0]) +
+                    ( vel(i,j,k+1,1) - vel(i,j-1,k+1,1) + vel(i,j,k-1,1) - vel(i,j-1,k-1,1) ) / (4.*dx[2]);
+                Real div_yhi = ( vel(i,j+1,k,1) - vel(i,j,k,1) ) / dx[1] +
+                    ( vel(i+1,j+1,k,1) - vel(i+1,j,k,1) + vel(i-1,j+1,k,1) - vel(i-1,j,k,1) ) / (4.*dx[0]) +
+                    ( vel(i,j+1,k+1,1) - vel(i,j,k+1,1) + vel(i,j+1,k-1,1) - vel(i,j,k-1,1) ) / (4.*dx[2]);
+                Real div_zlo = ( vel(i,j,k,2) - vel(i,j,k-1,2) ) / dx[2] +
+                    ( vel(i,j+1,k,2) - vel(i,j+1,k-1,2) + vel(i,j-1,k,2) - vel(i,j-1,k-1,2) ) / (4.*dx[1]) +
+                    ( vel(i+1,j,k,2) - vel(i+1,j,k-1,2) + vel(i-1,j,k,2) - vel(i-1,j,k-1,2) ) / (4.*dx[0]);
+                Real div_zhi = ( vel(i,j,k+1,2) - vel(i,j,k,2) ) / dx[2] +
+                    ( vel(i,j+1,k+1,2) - vel(i,j+1,k,2) + vel(i,j-1,k+1,2) - vel(i,j-1,k,2) ) / (4.*dx[1]) +
+                    ( vel(i+1,j,k+1,2) - vel(i+1,j,k,2) + vel(i-1,j,k+1,2) - vel(i-1,j,k,2) ) / (4.*dx[0]);
+
+                Real grad_div_x = (div_xhi - div_xlo) / dx[0];
+                Real grad_div_y = (div_yhi - div_ylo) / dx[1];
+                Real grad_div_z = (div_zhi - div_zlo) / dx[2];
+
+                graddiv(i,j,k,0) = grad_div_x;
+                graddiv(i,j,k,1) = grad_div_y;
+                graddiv(i,j,k,2) = grad_div_z;
+
+            });
+        }
+        for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.tilebox();
+            Array4<Real> const& vel = ld.velocity.array(mfi);
+            Array4<Real> const& graddiv = gd.array(mfi);
+            
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                vel(i,j,k,0) += 1.e-10*graddiv(i,j,k,0);
+                vel(i,j,k,1) += 1.e-10*graddiv(i,j,k,1);
+                vel(i,j,k,2) += 1.e-10*graddiv(i,j,k,2);
+
+            });
+        }
+    } // lev
+
     // add surface tension
     //fixme: we just consider the surface tension for first tracer
 if(0){

@@ -3,6 +3,7 @@
 #.......................................#
 #stop_time               = 2.2426211256
 stop_time               =   100e-6         # Max (simulated) time to evolve
+stop_time = 1.15e-5
 #stop_time =1.66481717925811447992
 #max_step                = 10          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
@@ -41,10 +42,10 @@ incflo.sigma            =   72.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-#amr.n_cell              =  32 64 32  # Grid cells at coarsest AMRlevel
-#amr.max_level           =   0           # Max AMR level in hierarchy 
-amr.n_cell              =  8 16 8
-amr.max_level           = 2
+amr.n_cell              =  32 64 32  # Grid cells at coarsest AMRlevel
+amr.max_level           =   0           # Max AMR level in hierarchy 
+#amr.n_cell              =  8 16 8
+#amr.max_level           = 2
 amr.max_grid_size       =  32 64  32 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
